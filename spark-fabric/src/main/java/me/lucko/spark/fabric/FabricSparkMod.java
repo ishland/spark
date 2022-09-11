@@ -26,12 +26,11 @@ import me.lucko.spark.fabric.plugin.FabricClientSparkPlugin;
 import me.lucko.spark.fabric.plugin.FabricServerSparkPlugin;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager.RegistrationEnvironment;
 import net.minecraft.server.command.ServerCommandSource;
@@ -80,7 +79,7 @@ public class FabricSparkMod implements ModInitializer {
         }
     }
 
-    public void onServerCommandRegister(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess access, RegistrationEnvironment env) {
+    public void onServerCommandRegister(CommandDispatcher<ServerCommandSource> dispatcher, boolean isDedicated) {
         if (this.activeServerPlugin != null) {
             this.activeServerPlugin.registerCommands(dispatcher);
         }

@@ -111,7 +111,7 @@ public class SparkPlatform {
 
         this.configuration = new Configuration(this.plugin.getPluginDirectory().resolve("config.json"));
 
-        this.viewerUrl = this.configuration.getString("viewerUrl", "https://spark.lucko.me/");
+        this.viewerUrl = this.configuration.getString("viewerUrl", "https://spark.ishland.com/");
         String bytebinUrl = this.configuration.getString("bytebinUrl", "https://bytebin.lucko.me/");
         this.bytebinClient = new BytebinClient(bytebinUrl, "spark-plugin");
 

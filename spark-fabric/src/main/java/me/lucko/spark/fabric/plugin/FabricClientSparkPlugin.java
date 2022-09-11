@@ -21,13 +21,11 @@
 package me.lucko.spark.fabric.plugin;
 
 import com.mojang.brigadier.Command;
-import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-
 import me.lucko.spark.common.platform.PlatformInfo;
 import me.lucko.spark.common.platform.world.WorldInfoProvider;
 import me.lucko.spark.common.sampler.ThreadDumper;
@@ -40,14 +38,14 @@ import me.lucko.spark.fabric.FabricTickHook;
 import me.lucko.spark.fabric.FabricTickReporter;
 import me.lucko.spark.fabric.FabricWorldInfoProvider;
 import me.lucko.spark.fabric.mixin.MinecraftClientAccessor;
-
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.fabric.api.client.command.v1.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v1.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandOutput;
+import net.minecraft.server.command.ServerCommandSource;
 
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -71,9 +69,10 @@ public class FabricClientSparkPlugin extends FabricSparkPlugin implements Comman
     public void enable() {
         super.enable();
 
+        registerCommands(ClientCommandManager.DISPATCHER, this, this, "sparkc", "sparkclient");
+
         // events
         ClientLifecycleEvents.CLIENT_STOPPING.register(this::onDisable);
-        ClientCommandRegistrationCallback.EVENT.register(this::onCommandRegister);
     }
 
     private void onDisable(MinecraftClient stoppingClient) {
@@ -82,29 +81,34 @@ public class FabricClientSparkPlugin extends FabricSparkPlugin implements Comman
         }
     }
 
-    public void onCommandRegister(CommandDispatcher<FabricClientCommandSource> dispatcher, CommandRegistryAccess registryAccess) {
-        registerCommands(dispatcher, this, this, "sparkc", "sparkclient");
-    }
-
     @Override
     public int run(CommandContext<FabricClientCommandSource> context) throws CommandSyntaxException {
-        String[] args = processArgs(context, false, "sparkc", "sparkclient");
+        String[] args = processArgs(context, false, "/sparkc", "sparkc", "/sparkclient", "sparkclient");
         if (args == null) {
             return 0;
         }
 
-        this.platform.executeCommand(new FabricCommandSender(context.getSource().getEntity(), this), args);
+        this.platform.executeCommand(new FabricCommandSender(this.minecraft.player, this), args);
         return Command.SINGLE_SUCCESS;
     }
 
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
-        String[] args = processArgs(context, true, "/sparkc", "/sparkclient");
+        String[] args = processArgs(context.getInput(), true);
         if (args == null) {
             return Suggestions.empty();
         }
 
-        return generateSuggestions(new FabricCommandSender(context.getSource().getEntity(), this), args, builder);
+        return generateSuggestions(new FabricCommandSender(this.minecraft.player, this), args, builder);
+    }
+
+    private static String[] processArgs(String input, boolean tabComplete) {
+        String[] split = input.split(" ", tabComplete ? -1 : 0);
+        if (split.length == 0 || !split[0].equals("/sparkc") && !split[0].equals("/sparkclient")) {
+            return null;
+        }
+
+        return Arrays.copyOfRange(split, 1, split.length);
     }
 
     @Override
