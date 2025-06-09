@@ -99,7 +99,7 @@ public class SamplerModule implements CommandModule {
                         }
                         if (subCommand.equals("start")) {
                             opts = new ArrayList<>(Arrays.asList("--timeout", "--regex", "--combine-all",
-                                    "--not-combined", "--interval", "--only-ticks-over", "--force-java-sampler", "--alloc", "--alloc-live-only"));
+                                    "--not-combined", "--interval", "--only-ticks-over", "--force-java-sampler", "--alloc", "--alloc-live-only", "--custom-event"));
                             opts.removeAll(arguments);
                             opts.add("--thread"); // allowed multiple times
                         }
@@ -227,6 +227,12 @@ public class SamplerModule implements CommandModule {
             }
         }
 
+        Set<String> customEvents = arguments.stringFlag("custom-event");
+        if (customEvents.size() > 1) {
+            resp.replyPrefixed(text("Please provide exactly one custom event.", RED));
+        }
+        String customEvent = Iterables.getFirst(customEvents, null);
+
         resp.broadcastPrefixed(text("Starting a new profiler, please wait..."));
 
         SamplerBuilder builder = new SamplerBuilder();
@@ -243,6 +249,7 @@ public class SamplerModule implements CommandModule {
         if (ticksOver != -1) {
             builder.ticksOver(ticksOver, tickHook);
         }
+        builder.customEvent(customEvent);
 
         Sampler sampler;
         try {
@@ -502,9 +509,19 @@ public class SamplerModule implements CommandModule {
     }
 
     private Sampler.ExportProps getExportProps(SparkPlatform platform, CommandResponseHandler resp, Arguments arguments) {
+        String comment = Iterables.getFirst(arguments.stringFlag("comment"), null);
+        String customEvent = Iterables.getFirst(arguments.stringFlag("custom-event"), null);
+        String finalComment = comment == null ? "" : comment;
+        if (customEvent != null) {
+            if (finalComment.isEmpty()) {
+                finalComment = "Custom event: " + customEvent;
+            } else {
+                finalComment += " | Custom event: " + customEvent;
+            }
+        }
         return new Sampler.ExportProps()
                 .creator(resp.senderData())
-                .comment(Iterables.getFirst(arguments.stringFlag("comment"), null))
+                .comment(finalComment.isEmpty() ? null : finalComment)
                 .mergeStrategy(arguments.boolFlag("separate-parent-calls") ? MergeStrategy.SEPARATE_PARENT_CALLS : MergeStrategy.SAME_METHOD)
                 .classSourceLookup(() -> ClassSourceLookup.create(platform));
     }

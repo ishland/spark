@@ -135,6 +135,13 @@ public class AsyncProfilerAccess {
         return supported;
     }
 
+    public boolean checkCustomEventSupported(String customEvent) {
+        if (this.profiler == null) {
+            return false;
+        }
+        return isEventSupported(this.profiler, customEvent, false);
+    }
+
     public String getVersion() {
         return this.profiler.getVersion();
     }
@@ -185,6 +192,10 @@ public class AsyncProfilerAccess {
      * @return if the event is supported
      */
     private static boolean isEventSupported(AsyncProfiler profiler, ProfilingEvent event, boolean throwException) {
+        return isEventSupported(profiler, event.toString(), throwException);
+    }
+
+    private static boolean isEventSupported(AsyncProfiler profiler, String event, boolean throwException) {
         try {
             String resp = profiler.execute("check,event=" + event).trim();
             if (resp.equalsIgnoreCase("ok")) {

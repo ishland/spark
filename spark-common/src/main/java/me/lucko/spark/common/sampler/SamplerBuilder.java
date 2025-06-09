@@ -50,6 +50,8 @@ public class SamplerBuilder {
     private int ticksOver = -1;
     private TickHook tickHook = null;
 
+    private String customEvent;
+
     public SamplerBuilder() {
     }
 
@@ -107,6 +109,11 @@ public class SamplerBuilder {
         return this;
     }
 
+    public SamplerBuilder customEvent(String customEvent) {
+        this.customEvent = customEvent;
+        return this;
+    }
+
     public Sampler start(SparkPlatform platform) throws UnsupportedOperationException {
         if (this.samplingInterval <= 0) {
             throw new IllegalArgumentException("samplingInterval = " + this.samplingInterval);
@@ -130,6 +137,18 @@ public class SamplerBuilder {
             canUseAsyncProfiler = false;
         }
 
+        if (this.customEvent != null) {
+            if (!canUseAsyncProfiler || !asyncProfiler.checkAllocationProfilingSupported(platform)) {
+                throw new UnsupportedOperationException("Custom event is not supported on your system. Check the console for more info.");
+            }
+            if (this.mode == SamplerMode.ALLOCATION) {
+                throw new IllegalArgumentException("Custom events are not supported in allocation profiling mode.");
+            }
+            if (!asyncProfiler.checkCustomEventSupported(this.customEvent)) {
+                throw new UnsupportedOperationException("Custom event '" + this.customEvent + "' is not supported by async-profiler on your system.");
+            }
+        }
+
         int interval = (int) (this.mode == SamplerMode.EXECUTION ?
                 this.samplingInterval * 1000d : // convert to microseconds
                 this.samplingInterval
@@ -141,7 +160,7 @@ public class SamplerBuilder {
         if (canUseAsyncProfiler) {
             SampleCollector<?> collector = this.mode == SamplerMode.ALLOCATION
                     ? new SampleCollector.Allocation(interval, this.allocLiveOnly)
-                    : new SampleCollector.Execution(interval);
+                    : new SampleCollector.Execution(interval, this.customEvent);
             sampler = onlyTicksOverMode
                     ? new AsyncSampler(platform, settings, collector, this.ticksOver)
                     : new AsyncSampler(platform, settings, collector);

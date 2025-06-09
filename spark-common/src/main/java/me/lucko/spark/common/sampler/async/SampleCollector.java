@@ -72,9 +72,11 @@ public interface SampleCollector<E extends Event> {
      */
     final class Execution implements SampleCollector<ExecutionSample> {
         private final int interval; // time in microseconds
+        private final String customEvent;
 
-        public Execution(int interval) {
+        public Execution(int interval, String customEvent) {
             this.interval = interval;
+            this.customEvent = customEvent;
         }
 
         @Override
@@ -83,7 +85,7 @@ public interface SampleCollector<E extends Event> {
             Objects.requireNonNull(event, "event");
 
             return ImmutableList.of(
-                    "event=" + event,
+                    "event=" + (this.customEvent != null ? this.customEvent : event),
                     "interval=" + this.interval + "us"
             );
         }
