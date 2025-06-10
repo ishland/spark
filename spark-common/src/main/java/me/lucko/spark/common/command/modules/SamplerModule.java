@@ -268,6 +268,15 @@ public class SamplerModule implements CommandModule {
                 .build()
         );
 
+        if (customEvent != null) {
+            resp.broadcastPrefixed(text()
+                    .append(text("Profiling custom event with async profiler:", GOLD))
+                    .append(space())
+                    .append(text(customEvent))
+                    .build()
+            );
+        }
+
         if (timeoutSeconds == -1) {
             resp.broadcastPrefixed(text("It will run in the background until it is stopped by an admin."));
             resp.broadcastPrefixed(text("To stop the profiler and upload the results, run:"));

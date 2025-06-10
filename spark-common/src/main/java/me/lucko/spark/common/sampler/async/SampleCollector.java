@@ -81,13 +81,20 @@ public interface SampleCollector<E extends Event> {
 
         @Override
         public Collection<String> initArguments(AsyncProfilerAccess access) {
-            ProfilingEvent event = access.getProfilingEvent();
-            Objects.requireNonNull(event, "event");
+            if (this.customEvent != null) {
+                return ImmutableList.of(
+                        "event=" + this.customEvent,
+                        "interval=" + this.interval
+                );
+            } else {
+                ProfilingEvent event = access.getProfilingEvent();
+                Objects.requireNonNull(event, "event");
 
-            return ImmutableList.of(
-                    "event=" + (this.customEvent != null ? this.customEvent : event),
-                    "interval=" + this.interval + "us"
-            );
+                return ImmutableList.of(
+                        "event=" + event,
+                        "interval=" + this.interval + "us"
+                );
+            }
         }
 
         @Override
